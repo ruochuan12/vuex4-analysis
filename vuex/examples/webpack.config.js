@@ -20,6 +20,8 @@ function buildEntry (dirname) {
 module.exports = {
   mode: 'development',
 
+  devtool: 'source-map',
+
   entry: {
     ...buildEntry('classic'),
     ...buildEntry('composition')
