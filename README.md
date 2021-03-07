@@ -338,6 +338,55 @@ function inject(key, defaultValue, treatDefaultAsFactory = false) {
 
 ### Vue.provide 源码实现
 
+```js
+function provide(key, value) {
+    if (!currentInstance) {
+        if ((process.env.NODE_ENV !== 'production')) {
+            warn(`provide() can only be used inside setup().`);
+        }
+    }
+    else {
+        let provides = currentInstance.provides;
+        // by default an instance inherits its parent's provides object
+        // but when it needs to provide values of its own, it creates its
+        // own provides object using parent provides object as prototype.
+        // this way in `inject` we can simply look up injections from direct
+        // parent and let the prototype chain do the work.
+        const parentProvides = currentInstance.parent && currentInstance.parent.provides;
+        if (parentProvides === provides) {
+            provides = currentInstance.provides = Object.create(parentProvides);
+        }
+        // TS doesn't allow symbol as index type
+        provides[key] = value;
+    }
+}
+```
+
+选学
+### createComponentInstance 创建组件实例
+
+```js
+const emptyAppContext = createAppContext();
+function createComponentInstance(vnode, parent, suspense) {
+    const appContext = (parent ? parent.appContext : vnode.appContext) || emptyAppContext;
+    const instance = {
+      // ...
+      provides: parent ? parent.provides : Object.create(appContext.provides),
+      // ...
+    }
+    return instance;
+}
+```
+
+// APP
+emptyAppContext.provides = Object.create(null)
+
+// 
+instance.provides = Object.create(Object.create(null))
+
+
+
+
 ## 其他基本和Vuex3.x版本没什么区别
 
 ## `Vuex 4`其他能力
@@ -347,7 +396,5 @@ function inject(key, defaultValue, treatDefaultAsFactory = false) {
 ```js
 import { createLogger } from 'vuex'
 ```
-
-
 
 [chrome source面板](https://mp.weixin.qq.com/s/lMlq4IKtHj2V3Hv2iB723w)
