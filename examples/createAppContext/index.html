@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>createAppContext</title>
+</head>
+<body>
+    <script>
+        const NO = false;
+        function createAppContext() {
+            return {
+                app: null,
+                config: {
+                    isNativeTag: NO,
+                    performance: false,
+                    globalProperties: {},
+                    optionMergeStrategies: {},
+                    isCustomElement: NO,
+                    errorHandler: undefined,
+                    warnHandler: undefined
+                },
+                mixins: [],
+                components: {},
+                directives: {},
+                provides: Object.create(null)
+            };
+        }
+        // 创建组件实例
+        const emptyAppContext = createAppContext();
+        function createComponentInstance(vnode, parent, suspense) {
+            const appContext = (parent ? parent.appContext : vnode.appContext) || emptyAppContext;
+            const instance = {
+                appContext,
+                // ...
+                provides: parent ? parent.provides : Object.create(appContext.provides),
+                // ...
+            }
+            return instance;
+        }
+
+        const currentInstance = createComponentInstance({}, null, null);
+        const currentInstanceChild = createComponentInstance({}, currentInstance, null);
+        console.log(currentInstance, currentInstanceChild);
+    </script>
+</body>
+</html>
