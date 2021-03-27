@@ -213,14 +213,16 @@ provide(key, value) {
     return app;
 }
 ```
-猜测context
 
 #### context
+
+从上文中搜索`context`，可以发现这一句代码
 
 ```js
 const context = createAppContext();
 ```
 
+接着我们来看函数 `createAppContext`。
 context 为上下文
 
 ```js
@@ -243,6 +245,8 @@ function createAppContext() {
     };
 }
 ```
+
+[Vue3 文档应用配置（app.config）](https://v3.cn.vuejs.org/api/application-config.html)
 
 ### 2.3.2 app.config.globalProperties
 
