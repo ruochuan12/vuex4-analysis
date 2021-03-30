@@ -1,14 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>createAppContext</title>
 </head>
+
 <body>
     <script>
+        var uid = 0;
+        var version = '3.0.5';
+        var storeKey = 'store';
+        function isFunction(fn){
+            return typeof fn === 'function';
+        }
+        function createApp(rootComponent, rootProps = null) {
+            const context = createAppContext();
+            const installedPlugins = new  Set();
+            const app = (context.app = {
+                _uid: uid++,
+                _component: rootComponent,
+                _props: rootProps,
+                _container: null,
+                _context: context,
+                get config() {
+                    return context.config;
+                },
+                version,
+                use(plugin, ...options) {
+                    if (installedPlugins.has(plugin)) {
+                        (process.env.NODE_ENV !== 'production') && warn(
+                            `Plugin has already been applied to target app.`);
+                    } else if (plugin && isFunction(plugin.install)) {
+                        installedPlugins.add(plugin);
+                        plugin.install(app, ...options);
+                    } else if (isFunction(plugin)) {
+                        installedPlugins.add(plugin);
+                        plugin(app, ...options);
+                    } else if ((process.env.NODE_ENV !== 'production')) {
+                        warn(`A plugin must either be a function or an object with an "install" ` +
+                            `function.`);
+                    }
+                    return app;
+                },
+                provide(key, value) {
+                    context.provides[key] = value;
+                    return app;
+                }
+            });
+            return app;
+        }
+        class Store {
+            constructor(options) {
+                this.name = 'Store 实例对象';
+                this.options = options;
+            }
+            install(app, injectKey) {
+                console.log(this, 'this');
+                app.provide(injectKey || storeKey, this)
+                app.config.globalProperties.$store = this
+            }
+            dispatch() {}
+            commit() {}
+            // 等等方法
+        }
+
+        function createStore(options) {
+            return new Store(options);
+        }
+
         const NO = false;
+
         function createAppContext() {
             return {
                 app: null,
@@ -29,10 +93,17 @@
         }
         // 创建组件实例
         const emptyAppContext = createAppContext();
+
+        
+        var app = createApp({});
+        var store = createStore({})
+        app.use(store);
+
         function createComponentInstance(vnode, parent, suspense) {
             const appContext = (parent ? parent.appContext : vnode.appContext) || emptyAppContext;
             const instance = {
                 appContext,
+                parent,
                 // ...
                 provides: parent ? parent.provides : Object.create(appContext.provides),
                 // ...
@@ -40,9 +111,19 @@
             return instance;
         }
 
-        const currentInstance = createComponentInstance({}, null, null);
-        const currentInstanceChild = createComponentInstance({}, currentInstance, null);
-        console.log(currentInstance, currentInstanceChild);
+        window.currentInstanceParent = createComponentInstance({
+            vnode: true
+        }, null, null);
+        window.currentInstanceChild1 = createComponentInstance({
+            vnode: true
+        }, currentInstanceParent, null);
+        window.currentInstanceChild2 = createComponentInstance({
+            vnode: true
+        }, currentInstanceParent, null);
+        console.log('currentInstanceParent', currentInstanceParent);
+        console.log('currentInstanceChild1', currentInstanceChild1);
+        console.log('currentInstanceChild2', currentInstanceChild2);
     </script>
 </body>
+
 </html>
