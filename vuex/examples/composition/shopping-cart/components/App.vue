@@ -12,8 +12,17 @@
 <script>
 import ProductList from './ProductList.vue'
 import ShoppingCart from './ShoppingCart.vue'
+import { useStore } from 'vuex';
 
 export default {
-  components: { ProductList, ShoppingCart }
+  components: { ProductList, ShoppingCart },
+  setup () {
+    const store = useStore()
+
+    window.AppStore = store;
+  },
+  mounted() {
+    window.$Store = this.$store;
+  },
 }
 </script>

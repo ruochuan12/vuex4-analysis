@@ -24,6 +24,8 @@ export default {
   setup () {
     const store = useStore()
 
+    window.ShoppingCartStore = store;
+
     const checkoutStatus = computed(() => store.state.cart.checkoutStatus)
     const products = computed(() => store.getters['cart/cartProducts'])
     const total = computed(() => store.getters['cart/cartTotalPrice'])

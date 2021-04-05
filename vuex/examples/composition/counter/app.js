@@ -7,3 +7,5 @@ const app = createApp(Counter)
 app.use(store)
 
 app.mount('#app')
+
+window.app = app;

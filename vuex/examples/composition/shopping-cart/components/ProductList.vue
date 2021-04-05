@@ -23,6 +23,8 @@ export default {
   setup () {
     const store = useStore()
 
+    window.ProductListStore = store;
+
     const products = computed(() => store.state.products.all)
 
     const addProductToCart = (product) => store.dispatch('cart/addProductToCart', product)
