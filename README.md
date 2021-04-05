@@ -23,20 +23,22 @@
 
 如果对于谷歌浏览器调试还不是很熟悉的读者，可以看这篇文章[chrome devtools source面板](https://mp.weixin.qq.com/s/lMlq4IKtHj2V3Hv2iB723w)，写的很详细。谷歌浏览器是我们前端常用的工具，所以建议大家深入学习，毕竟**工欲善其事，必先利其器**。
 
-之前写过`Vuex 3`的源码文章[微信链接：学习 vuex 源码整体架构，打造属于自己的状态管理库](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)，阅读体验可能不太好，可以访问[博客链接](https://juejin.cn/post/6844904001192853511) `http://lxchuan12.gitee.io/vuex`，仓库很详细的注释和看源码方法，所以本文不会过多赘述与`Vuex 3`源码相同的地方。
+之前写过`Vuex 3`的源码文章[学习 vuex 源码整体架构，打造属于自己的状态管理库](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)`http://lxchuan12.gitee.io/vuex`，仓库有很详细的注释和看源码方法，所以本文不会过多赘述与`Vuex 3`源码相同的地方。
 
 最近抽空看了下`Vuex 4`的源码，顺便学习了下`composition API`，写下这篇文章。
 
-## 1. `Vuex` 原理
+## 1. `Vuex` 原理简述
 
-结论先行：Vuex原理可以拆解为三个关键。
-第一、其实就是每个组件里混入了Store实例。
-第二、Store实例中的各种方法都是为Store中的属性服务的。
-第三、Store中的属性变更触发视图更新。
+结论先行：Vuex原理可以拆解为三个关键点。
+第一点、其实就是每个组件实例里都混入了Store实例，挂载在provides中。
+那么每个组件如何获取组件实例中的Store实例，composition API中本质上则是使用inject函数。
+第二点、Store实例中的各种方法都是为Store中的属性服务的。
+第三点、Store中的属性变更触发视图更新。
 
-本文主要讲解第一步。第二步在我的上一篇文章讲了就不赘述了。
+本文主要讲解第一点。第二点在我的上一篇文章[学习 vuex 源码整体架构，打造属于自己的状态管理库](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)详细讲了，本文就不赘述了。第三点两篇文章都没有讲述。
 
 ```js
+// 简版
 class Store{
   constructor(){
     this.name = 'Store 实例';
@@ -45,10 +47,14 @@ class Store{
 
   }
   commit(){}
+  // 省略
 }
 
 
 const store = new Store();
+var rootInstance = {
+  Store: store,
+};
 var parentInstance = {
   Store: store,
 };
@@ -58,7 +64,11 @@ var childInstance1 = {
 var childInstance2 = {
   Store: store
 };
+
+store.name = '我被修改了';
 ```
+
+![provide,inject](./images/components_provide.png)
 
 所以要学习的问题是：怎么混入的。
 
