@@ -2,7 +2,7 @@
 
 ## 1. 前言
 
->你好，我是[若川](https://lxchuan12.gitee.io)，微信搜索[「若川视野」](https://mp.weixin.qq.com/s/c3hFML3XN9KCUetDOZd-DQ)关注我，专注前端技术分享。欢迎加我微信`ruochuan12`，加群交流学习。
+>你好，我是[若川](https://lxchuan12.gitee.io)，微信搜索[「若川视野」](https://mp.weixin.qq.com/s/c3hFML3XN9KCUetDOZd-DQ)关注我，专注前端技术分享，一个愿景是帮助5年内前端开阔视野走向前列的公众号。欢迎加我微信`ruochuan12`，加群交流学习。
 
 >这是`学习源码整体架构系列` 之 vuex4源码（第九篇）。
 学习源码整体架构系列文章([有哪些必看的JS库](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650746362&idx=1&sn=afe3a26cdbde1d423aae4fa99355f369&chksm=88662e76bf11a760a7f0a8565b9e8d52f5e4f056dc2682f213eec6475127d71f6f1d203d6c3a&scene=21#wechat_redirect))：[jQuery](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744496&idx=1&sn=0f149e9436cb77bf9fc1bfb47aedd334&chksm=8866253cbf11ac2a53b385153cd8e9a0c4018b6b566750cf0b5d61d17afa2e90b52d36db8054&scene=21#wechat_redirect)、[underscore](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744505&idx=1&sn=26801ad6c2a5eb9cf64e7556b6478d39&chksm=88662535bf11ac23eea3f76335f6777e2acbf4ee660b5616148e14ffbefc0e8520806db21056&scene=21#wechat_redirect)、[lodash](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744514&idx=1&sn=776336d888d06bfe72cb4d5b07a4b90c&chksm=8866254ebf11ac5822fc078082603f77a4b4d9b487c9f4d7069acb12c727c46c75946fa9b0cd&scene=21#wechat_redirect)、[sentry](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744551&idx=1&sn=4d79c2fa97d7c737aab70055c7ec7fa3&chksm=8866256bbf11ac7d9e2269f3638a705d5e5f45056d53ad2faf17b814e4c46ec6b0ba52571bde&scene=21#wechat_redirect)、[vuex](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)、[axios](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744604&idx=1&sn=51d8d865c9848fd59f7763f5fb9ce789&chksm=88662490bf11ad86061ae76ff71a1177eeddab02c38d046eecd0e1ad25dc16f7591f91e9e3b2&scene=21#wechat_redirect)、[koa](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744703&idx=1&sn=cfb9580241228993e4d376017234ff79&chksm=886624f3bf11ade5f5e37520f6b1291417bcea95f222906548b863f4b61d20e7508eb419eb85&token=192125900&lang=zh_CN&scene=21#wechat_redirect)、[redux](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650745007&idx=1&sn=1fd6f3caeff6ab61b8d5f644a1dbb7df&chksm=88662b23bf11a23573509a01f941d463b0c61e890b2069427c78c26296197077da359c522fe8&scene=21#wechat_redirect)。整体架构这词语好像有点大，姑且就算是源码整体结构吧，主要就是学习是代码整体结构，不深究其他不是主线的具体函数的实现。本篇文章学习的是实际仓库的代码。
@@ -155,22 +155,33 @@ npm run dev
 # 打开 http://localhost:8080/
 # 选择 composition  购物车的例子 shopping-cart
 # 打开 http://localhost:8080/composition/shopping-cart/
+# 按 F12 打开调试工具，source面板 => page => webpack:// => .
 ```
 
-```js
-import { createStore } from 'vuex'
+找到 `createStore`函数打上断点。
 
-export const store = createStore({
-  state() {
-    return {
-      count: 1
-    }
-  }
+```js
+// webpack:///./examples/composition/shopping-cart/store/index.js
+import { createStore, createLogger } from 'vuex'
+import cart from './modules/cart'
+import products from './modules/products'
+
+const debug = process.env.NODE_ENV !== 'production'
+
+export default createStore({
+  modules: {
+    cart,
+    products
+  },
+  strict: debug,
+  plugins: debug ? [createLogger()] : []
 })
 ```
 
+找到`app.js`入口，在`app.use(store)`、`app.mount('#app')`等打上断点。
+
 ```js
-// 
+// webpack:///./examples/composition/shopping-cart/app.js
 import { createApp } from 'vue'
 import App from './components/App.vue'
 import store from './store'
@@ -181,6 +192,8 @@ const app = createApp(App)
 app.use(store)
 
 app.mount('#app')
+
+window.app = app;
 ```
 
 接下来，我们从`createApp({})`、`app.use(Store)`两个方面发散开来讲解。
@@ -217,7 +230,13 @@ function resetStoreState (store, state, hot) {
 
 `Vue.reactive` 函数方法，本文就不展开讲解了。因为展开来讲，又可以写篇新的文章了。只需要知道主要功能是监测数据改变，变更视图即可。
 
+跟着断点我们继续看`app.use()`方法，`Vue`提供的插件机制。
+
 ### 4.3 app.use() 方法
+
+use做的事情说起来也算简单，把传递过来的插件添加插件集合中，到防止重复。
+
+执行插件，如果是对象，`install`是函数，则把参数app和其他参数传递给install函数执行。如果是函数直接执行。
 
 ```js
 // runtime-core.esm-bundler.js
@@ -259,6 +278,8 @@ function createAppAPI(render, hydrate) {
 
 ```
 
+上面代码中，断点这行`plugin.install(app, ...options);`
+
 跟着断点走到下一步，`install`函数。
 
 ### 4.4 install 函数
@@ -267,8 +288,8 @@ function createAppAPI(render, hydrate) {
 export class Store{
     // 省略若干代码...
     install (app, injectKey) {
-       // 为 composition API 中使用
-      //  可以传入 injectKey  如果没传取默认的 storeKey 也就是 store
+        // 为 composition API 中使用
+        //  可以传入 injectKey  如果没传取默认的 storeKey 也就是 store
         app.provide(injectKey || storeKey, this)
         // 为 option API 中使用
         app.config.globalProperties.$store = this
@@ -276,8 +297,14 @@ export class Store{
     // 省略若干代码...
 }
 ```
+`Vuex4`中的`install`函数相对比`Vuex3`中简单了许多。
+第一句是给`Composition API`提供的。注入到根实例对象中。
+第二句则是为`option API`提供的。
 
+接着断点这两句，按`F11`来看`app.provide`实现。
 #### 4.4.1 app.provide
+
+简单来说就是给`context`的`provides`属性中加了`store` = **Store实例对象**。
 
 ```js
 provide(key, value) {
@@ -293,7 +320,7 @@ provide(key, value) {
 }
 ```
 
-从上方代码中搜索`context`，可以发现这一句代码
+接着从上方代码中搜索`context`，可以发现这一句代码：
 
 ```js
 const context = createAppContext();
@@ -326,8 +353,6 @@ function createAppContext() {
 
 [Vue3 文档应用配置(app.config)](https://v3.cn.vuejs.org/api/application-config.html) `https://v3.cn.vuejs.org/api/application-config.html`
 
-也就是说在`AppContext.provides`中注入了一个Store实例对象。
-
 #### 4.4.2 app.config.globalProperties
 
 [app.config.globalProperties 官方文档](https://v3.cn.vuejs.org/api/application-config.html#globalproperties)
@@ -346,34 +371,40 @@ app.component('child-component', {
 
 也就能解释为什么每个组件都可以使用 `this.$store.xxx` 访问 `vuex`中的方法和属性了。
 
-至此我们就看完，`createStore(store)`，`app.use(store)`两个API
+也就是说在`appContext.provides`中注入了一个**Store实例对象**。这时也就是相当于根组件实例和`config`全局配置`globalProperties`中有了**Store实例对象**。
+
+至此我们就看完，`createStore(store)`，`app.use(store)`两个`API`。
 
 `app.provide` 其实是用于`composition API`使用的。
 
+但这只是文档中这样说的，为啥就每个组件实例都能访问的呢，我们继续深入探究下原理。
+
 接下来，我们看下源码具体实现，为什么每个组件实例中都能获取到的。
+
+这之前先来看下组合式`API`中，我们如何使用`Vuex4`，这是线索。
 
 ### 4.5 `composition API` 中如何使用`Vuex 4`
 
+接着我们找到如下文件，`useStore`是我们断点的对象。
+
 ```js
-// vuex/examples/classic/counter/Counter.vue
+// webpack:///./examples/composition/shopping-cart/components/ShoppingCart.vue
 import { computed } from 'vue'
 import { useStore } from 'vuex'
+import { currency } from '../currency'
 
 export default {
   setup () {
     const store = useStore()
 
-    return {
-      count: computed(() => store.state.count),
-      evenOrOdd: computed(() => store.getters.evenOrOdd),
-      increment: () => store.dispatch('increment'),
-      decrement: () => store.dispatch('decrement'),
-      incrementIfOdd: () => store.dispatch('incrementIfOdd'),
-      incrementAsync: () => store.dispatch('incrementAsync')
-    }
+    // 我加的这行代码
+    window.ShoppingCartStore = store;
+    // 省略了若干代码
   }
 }
 ```
+
+接着断点按`F11`，单步调试，会发现最终是使用了`Vue.inject`方法。
 
 #### 4.5.1 Vuex.useStore 源码实现
 
@@ -389,6 +420,14 @@ export function useStore (key = null) {
 ```
 
 #### 4.5.2 Vue.inject 源码实现
+
+
+接着看`inject`函数，看着代码很多，其实原理很简单，就是要找到我们用provide提供的值。
+
+如果没有父级，也就是根实例，就取实例对象中的`vnode.appContext.provides`。
+否则就取父级中的`instance.parent.provides`的值。
+
+在`Vuex4`源码里则是：Store实例对象。
 
 ```js
 // runtime-core.esm-bundler.js
@@ -427,7 +466,7 @@ function inject(key, defaultValue, treatDefaultAsFactory = false) {
 }
 ```
 
-接着我们继续来看`inject`的，`provide`。
+接着我们继续来看`inject`的相对应的`provide`。
 
 #### 4.5.3  Vue.provide 源码实现
 
@@ -465,6 +504,8 @@ function provide(key, value) {
 
 ### 4.6 createComponentInstance 创建组件实例
 
+可以禁用其他断点，单独断点这里来看具体实现。
+
 ```js
 // runtime-core.esm-bundler.js
 const emptyAppContext = createAppContext();
@@ -491,13 +532,26 @@ function createComponentInstance(vnode, parent, suspense) {
 }
 ```
 
+断点时会发现，根组件实例时`vnode`已经生成，至于是什么时候生成的，我整理了下简化版。
+
+```js
+// 把上文中的appContext 赋值给了 `appContext`
+mount(rootContainer, isHydrate) {
+    if (!isMounted) {
+        const vnode = createVNode(rootComponent, rootProps);
+        // store app context on the root VNode.
+        // this will be set on the root instance on initial mount.
+        vnode.appContext = context;
+    }
+},
+```
+
 // APP
 emptyAppContext.provides = Object.create(null)
 
-// 
 instance.provides = Object.create(Object.create(null))
 
-`getCurrentInstance`
+### 4.7 `getCurrentInstance` 获取当前实例对象
 
 `getCurrentInstance` 支持访问内部组件实例，用于高阶用法或库的开发。
 
@@ -531,10 +585,15 @@ import { createLogger } from 'vuex'
 
 是不是觉得豁然开朗。
 
+
+
 TODO:
 - [ ] 原型图
-- [ ] 补devtools图
-- [ ] 补组件图
+- [x] 补devtools图
+- [x] 补组件图
 - [ ] 补 appContext
 - [ ] 补源码、挑战耐心的
-- [ ] 补流程
+- [ ] 补流程细节
+- [ ] 完善 createComponentInstance 组件实例
+- [ ] 简版 demo 描述
+- [ ] provide原理阐述
