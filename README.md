@@ -1,6 +1,6 @@
 # 学习 `Vuex 4` 源码整体架构，深入理解provide、inject原理
 
-## 前言
+## 1. 前言
 
 >你好，我是[若川](https://lxchuan12.gitee.io)，微信搜索[「若川视野」](https://mp.weixin.qq.com/s/c3hFML3XN9KCUetDOZd-DQ)关注我，专注前端技术分享。欢迎加我微信`ruochuan12`，加群交流学习。
 
@@ -12,7 +12,7 @@
 >**要是有人说到怎么读源码，正在读文章的你能推荐我的源码系列文章，那真是无以为报**。
 
 源码类文章，一般阅读量不高。已经有能力看懂的，自己就看了。不想看，不敢看的就不会去看源码。
-所以我的文章，尽量写得让想看源码又不知道怎么看的读者能看懂。我都是推荐使用**搭建环境断点调试源码学习**，**哪里不会点哪里**，边调试边看，而不是硬看。正所谓：**授人与鱼不如授人予渔**。
+所以我的文章，尽量写得让想看源码又不知道怎么看的读者能看懂。我都是推荐使用**搭建环境断点调试源码学习**，**哪里不会点哪里**，**边调试边看，而不是硬看**。正所谓：**授人与鱼不如授人予渔**。
 
 阅读本文后你将学到：TODO:
 
@@ -23,22 +23,22 @@
 - 5. Vue.provide / inject API使用
 - 等等
 
-如果对于谷歌浏览器调试还不是很熟悉的读者，可以看这篇文章[chrome devtools source面板](https://mp.weixin.qq.com/s/lMlq4IKtHj2V3Hv2iB723w)，写的很详细。谷歌浏览器是我们前端常用的工具，所以建议大家深入学习，毕竟**工欲善其事，必先利其器**。
+如果对于谷歌浏览器调试还不是很熟悉的读者，可以看这篇文章[chrome devtools source面板](https://mp.weixin.qq.com/s/lMlq4IKtHj2V3Hv2iB723w)，写的很详细。顺带提一下，我打开的设置，source面板中支持展开搜索代码块（默认不支持），一图胜千言![code-folding](./images/code-folding.png)。谷歌浏览器是我们前端常用的工具，所以建议大家深入学习，毕竟**工欲善其事，必先利其器**。
 
 之前写过`Vuex 3`的源码文章[学习 vuex 源码整体架构，打造属于自己的状态管理库](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)`http://lxchuan12.gitee.io/vuex`，仓库有很详细的注释和看源码方法，所以本文不会过多赘述与`Vuex 3`源码相同的地方。
 
-## 1.1 本文阅读最佳方式
+### 1.1 本文阅读最佳方式
 
-把我的vuex4源码仓库 `git clone https://github.com/lxchuan12/vuex4-analysis.git`克隆下来，顺便star一下我的[vuex4源码学习仓库](https://github.com/lxchuan12/vuex4-analysis.git)^_^。**跟着文章节奏调试和示例代码调试，用chrome动手调试印象更加深刻**。文章长段代码不用细看，可以调试时再细看。看这类源码文章百遍，可能不如自己多调试几遍。也欢迎加我微信交流`ruochuan12`。
+把我的vuex4源码仓库 `git clone https://github.com/lxchuan12/vuex4-analysis.git`克隆下来，顺便star一下我的[vuex4源码学习仓库](https://github.com/lxchuan12/vuex4-analysis.git)^_^。**跟着文章节奏调试和示例代码调试，用chrome动手调试印象更加深刻**。文章长段代码不用细看，可以调试时再细看。看这类源码文章百遍，可能不如自己多调试几遍，大胆猜测，小心求证。也欢迎加我微信交流`ruochuan12`。
 
-## 1. `Vuex` 原理简述
+## 2. `Vuex` 原理简述
 
-结论先行：Vuex原理可以拆解为三个关键点。
-第一点、其实就是每个组件实例里都注入了Store实例。
-第二点、Store实例中的各种方法都是为Store中的属性服务的。
-第三点、Store中的属性变更触发视图更新。
+**结论先行**：Vuex原理可以拆解为三个关键点。
+第一点、其实就是每个组件实例里都注入了`Store`实例。
+第二点、`Store`实例中的各种方法都是为`Store`中的属性服务的。
+第三点、`Store`中的属性变更触发视图更新。
 
-本文主要讲解第一点。第二点在我的上一篇文章[学习 vuex 源码整体架构，打造属于自己的状态管理库](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)详细讲了，本文就不赘述了。第三点两篇文章都没有讲述。
+本文主要讲解第一点。第二点在我的上一篇文章[学习 vuex 源码整体架构，打造属于自己的状态管理库](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)详细讲了，本文就不赘述了。第三点两篇文章都没有详细讲述。
 
 ```js
 // 简版
@@ -69,23 +69,23 @@ var childInstance2 = {
 };
 
 store.name = '我被修改了';
+// 所有对象中的store都改了。
 ```
 
-![provide,inject](./images/components_provide.png)
+![provide,inject示例图](./images/components_provide.png)
 
-看了上面的官方文档中的图，就知道是用`provide`，提供，用`inject`来获取到。
-带着问题：
-1、`Vuex4`作为`Vue`的插件如何实现和vue结合
-2、`provide`、`inject`的具体实现
-3、为啥每个组件对象里都有Store实例对象了(渲染组件对象过程)
+看了上面的官方文档中的图，就知道是用`provide`父级组件中提供`Store`实例，用`inject`来获取到`Store`实例。
 
-那么每个组件如何获取组件实例中的Store实例，composition API中本质上则是使用inject函数。
+那么接下来，带着问题：
+1、`Vuex4`作为`Vue`的插件如何实现和`Vue`结合的。
+2、`provide`、`inject`的如何实现的，每个组件如何获取到组件实例中的`Store`的。
+3、为啥每个组件对象里都有`Store`实例对象了(渲染组件对象过程)。
 
-1、
+那么每个组件如何获取组件实例中的Store实例，`composition API`中本质上则是使用`inject`函数。
 
 全局的`Store` 实例对象。通过`Vue.reactive()`监测数据。
 
-## 2. `Vuex 4` 重大改变
+## 3. `Vuex 4` 重大改变
 
 `Vuex 4`发布了[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
 
@@ -95,7 +95,7 @@ store.name = '我被修改了';
 
 相比`Vuex 3`版本。主要有如下重大改变（其他的在上方链接中）：
 
-### 2.1 安装过程
+### 3.1 安装过程
 
 `Vuex 3`是`Vue.use(Vuex)`
 
@@ -125,7 +125,7 @@ app.use(store)
 app.mount('#app')
 ```
 
-### 2.2 核心模块导出了 `createLogger` 函数
+### 3.2 核心模块导出了 `createLogger` 函数
 
 ```js
 import { createLogger } from 'vuex'
@@ -133,9 +133,9 @@ import { createLogger } from 'vuex'
 
 **接下来我们从源码的角度来看这些重大改变**。
 
-## 3. 从源码角度看 `Vuex 4` 重大变化
+## 4. 从源码角度看 `Vuex 4` 重大变化
 
-### 3.1 `chrome` 调试 `Vuex 4` 源码准备工作
+### 4.1 `chrome` 调试 `Vuex 4` 源码准备工作
 
 ```sh
 git subtree add --prefix=vuex https://github.com/vuejs/vuex.git 4.0
@@ -185,7 +185,7 @@ app.mount('#app')
 
 接下来，我们从`createApp({})`、`app.use(Store)`两个方面发散开来讲解。
 
-### 3.2 Vuex.createStore 函数
+### 4.2 Vuex.createStore 函数
 
 相比 `Vuex 3` 中，`new Vuex.Store`，其实是一样的。只不过为了和`Vue 3` 统一，`Vuex 4` 额外多了一个 `createStore` 函数。
 
@@ -217,7 +217,7 @@ function resetStoreState (store, state, hot) {
 
 `Vue.reactive` 函数方法，本文就不展开讲解了。因为展开来讲，又可以写篇新的文章了。只需要知道主要功能是监测数据改变，变更视图即可。
 
-### 3.3 app.use() 方法
+### 4.3 app.use() 方法
 
 ```js
 // runtime-core.esm-bundler.js
@@ -261,7 +261,7 @@ function createAppAPI(render, hydrate) {
 
 跟着断点走到下一步，`install`函数。
 
-### 3.4 install 函数
+### 4.4 install 函数
 
 ```js
 export class Store{
@@ -277,7 +277,7 @@ export class Store{
 }
 ```
 
-#### 3.4.1 app.provide
+#### 4.4.1 app.provide
 
 ```js
 provide(key, value) {
@@ -328,7 +328,7 @@ function createAppContext() {
 
 也就是说在`AppContext.provides`中注入了一个Store实例对象。
 
-#### 3.4.2 app.config.globalProperties
+#### 4.4.2 app.config.globalProperties
 
 [app.config.globalProperties 官方文档](https://v3.cn.vuejs.org/api/application-config.html#globalproperties)
 
@@ -352,7 +352,7 @@ app.component('child-component', {
 
 接下来，我们看下源码具体实现，为什么每个组件实例中都能获取到的。
 
-### 3.5 `composition API` 中如何使用`Vuex 4`
+### 4.5 `composition API` 中如何使用`Vuex 4`
 
 ```js
 // vuex/examples/classic/counter/Counter.vue
@@ -375,7 +375,7 @@ export default {
 }
 ```
 
-#### 3.5.1 Vuex.useStore 源码实现
+#### 4.5.1 Vuex.useStore 源码实现
 
 ```js
 // vuex/src/injectKey.js
@@ -388,7 +388,7 @@ export function useStore (key = null) {
 }
 ```
 
-#### 3.5.2 Vue.inject 源码实现
+#### 4.5.2 Vue.inject 源码实现
 
 ```js
 // runtime-core.esm-bundler.js
@@ -429,7 +429,7 @@ function inject(key, defaultValue, treatDefaultAsFactory = false) {
 
 接着我们继续来看`inject`的，`provide`。
 
-#### 3.5.3  Vue.provide 源码实现
+#### 4.5.3  Vue.provide 源码实现
 
 ```js
 // runtime-core.esm-bundler.js
@@ -463,7 +463,7 @@ function provide(key, value) {
 
 接下来我们`createComponentInstance`函数如何创建组件实例。
 
-### 3.6 createComponentInstance 创建组件实例
+### 4.6 createComponentInstance 创建组件实例
 
 ```js
 // runtime-core.esm-bundler.js
@@ -513,9 +513,9 @@ const MyComponent = {
 }
 ```
 
-## 其他基本和Vuex3.x版本没什么区别
+## 5. 其他基本和Vuex3.x版本没什么区别
 
-## `Vuex 4`其他能力
+## 6. `Vuex 4`其他能力
 
 核心模块导出了 `createLogger` 函数
 
@@ -523,11 +523,18 @@ const MyComponent = {
 import { createLogger } from 'vuex'
 ```
 
-## 总结
+## 7. 总结
 
-本文总有讲述了`Vuex4`把`Store`实例注入到各个组件中的原理，展开讲述了`Vuex4`相对与`Vuex3`安装方式的改变`Vuex.createStore`、`app.use(store)` ，深入源码分析`Vue.inject`、`Vue.provide`实现原理。
+本文总有讲述了`Vuex4`把`Store`实例注入到各个组件中的原理，展开讲述了`Vuex4`相对与`Vuex3`安装方式的改变`Vuex.createStore`、`app.use(store)` ，深入源码分析`Vue.inject`、`Vue.provide`实现原理。最后回顾下文章开头的图。
+
+![provide,inject示例图](./images/components_provide.png)
+
+是不是觉得豁然开朗。
 
 TODO:
 - [ ] 原型图
 - [ ] 补devtools图
 - [ ] 补组件图
+- [ ] 补 appContext
+- [ ] 补源码、挑战耐心的
+- [ ] 补流程
