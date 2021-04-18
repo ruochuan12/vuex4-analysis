@@ -33,12 +33,14 @@
 
 ## 2. `Vuex` 原理简述
 
-**结论先行**：Vuex原理可以拆解为三个关键点。
+**结论先行**：`Vuex`原理可以拆解为三个关键点。
 第一点、其实就是每个组件实例里都注入了`Store`实例。
 第二点、`Store`实例中的各种方法都是为`Store`中的属性服务的。
 第三点、`Store`中的属性变更触发视图更新。
 
 本文主要讲解第一点。第二点在我的上一篇文章[学习 vuex 源码整体架构，打造属于自己的状态管理库](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)详细讲了，本文就不赘述了。第三点两篇文章都没有详细讲述。
+
+以下是一段简短的代码说明`Vuex`原理的。
 
 ```js
 // 简版
@@ -69,7 +71,8 @@ var childInstance2 = {
 };
 
 store.name = '我被修改了';
-// 所有对象中的store都改了。
+// rootInstance、parentInstance、childInstance1、childInstance2 这些对象中的store都改了。
+// 因为共享着同一个store对象。
 ```
 
 ![provide,inject示例图](./images/components_provide.png)
@@ -80,14 +83,15 @@ store.name = '我被修改了';
 1、`Vuex4`作为`Vue`的插件如何实现和`Vue`结合的。
 2、`provide`、`inject`的如何实现的，每个组件如何获取到组件实例中的`Store`的。
 3、为啥每个组件对象里都有`Store`实例对象了(渲染组件对象过程)。
+4、为啥我在组件中写的`provide`提供的数据，能被子级组件获取到。
 
-那么每个组件如何获取组件实例中的Store实例，`composition API`中本质上则是使用`inject`函数。
+那么每个组件如何获取组件实例中的`Store`实例，`composition API`中本质上则是使用`inject`函数。
 
 全局的`Store` 实例对象。通过`Vue.reactive()`监测数据。
 
 ## 3. `Vuex 4` 重大改变
 
-`Vuex 4`发布了[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
+在`Vuex 4`发布的`release`中，`Vuex 4`发布了[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
 
 [Vuex 4 官方文档](https://next.vuex.vuejs.org/) `https://next.vuex.vuejs.org/`
 
@@ -147,6 +151,8 @@ git subtree add --prefix=vuex https://github.com/vuejs/vuex.git 4.0
 
 把`vuex/examples/webpack.config.js`，加个`devtool: 'source-map'`，这样就能开启`sourcemap`调试源码了。
 
+我们使用项目的中购物车的例子调试，贯穿全文。
+
 ```sh
 git clone https://github.com/lxchuan12/vuex4-analysis.git
 cd vuex
@@ -157,6 +163,10 @@ npm run dev
 # 打开 http://localhost:8080/composition/shopping-cart/
 # 按 F12 打开调试工具，source面板 => page => webpack:// => .
 ```
+
+据说一图胜千言，这时简单截个图。
+
+![vuex debugger](./images/debugger.png)
 
 找到 `createStore`函数打上断点。
 
@@ -192,8 +202,6 @@ const app = createApp(App)
 app.use(store)
 
 app.mount('#app')
-
-window.app = app;
 ```
 
 接下来，我们从`createApp({})`、`app.use(Store)`两个方面发散开来讲解。
@@ -234,12 +242,12 @@ function resetStoreState (store, state, hot) {
 
 ### 4.3 app.use() 方法
 
-use做的事情说起来也算简单，把传递过来的插件添加插件集合中，到防止重复。
+`use`做的事情说起来也算简单，把传递过来的插件添加插件集合中，到防止重复。
 
 执行插件，如果是对象，`install`是函数，则把参数app和其他参数传递给install函数执行。如果是函数直接执行。
 
 ```js
-// runtime-core.esm-bundler.js
+// webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
 function createAppAPI(render, hydrate) {
     return function createApp(rootComponent, rootProps = null) {
       // 代码有删减
@@ -330,7 +338,7 @@ const context = createAppContext();
 context 为上下文
 
 ```js
-// runtime-core.esm-bundler.js
+// webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
 function createAppContext() {
     return {
         app: null,
@@ -421,16 +429,15 @@ export function useStore (key = null) {
 
 #### 4.5.2 Vue.inject 源码实现
 
-
-接着看`inject`函数，看着代码很多，其实原理很简单，就是要找到我们用provide提供的值。
+接着看`inject`函数，看着代码很多，其实原理很简单，就是要找到我们用`provide`提供的值。
 
 如果没有父级，也就是根实例，就取实例对象中的`vnode.appContext.provides`。
 否则就取父级中的`instance.parent.provides`的值。
 
-在`Vuex4`源码里则是：Store实例对象。
+在`Vuex4`源码里则是：`Store`实例对象。
 
 ```js
-// runtime-core.esm-bundler.js
+// webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
 function inject(key, defaultValue, treatDefaultAsFactory = false) {
     // fallback to `currentRenderingInstance` so that this can be called in
     // a functional component
@@ -471,7 +478,7 @@ function inject(key, defaultValue, treatDefaultAsFactory = false) {
 #### 4.5.3  Vue.provide 源码实现
 
 ```js
-// runtime-core.esm-bundler.js
+// webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
 function provide(key, value) {
     if (!currentInstance) {
         if ((process.env.NODE_ENV !== 'production')) {
@@ -504,10 +511,12 @@ function provide(key, value) {
 
 ### 4.6 createComponentInstance 创建组件实例
 
-可以禁用其他断点，单独断点这里来看具体实现。
+可以禁用其他断点，单独断点这里，
+比如：`const appContext = (parent ? parent.appContext : vnode.appContext) || emptyAppContext;`
+来看具体实现。
 
 ```js
-// runtime-core.esm-bundler.js
+// webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
 const emptyAppContext = createAppContext();
 let uid$1 = 0;
 function createComponentInstance(vnode, parent, suspense) {
@@ -532,10 +541,16 @@ function createComponentInstance(vnode, parent, suspense) {
 }
 ```
 
+root => root =>
+
+root => provides => appContext.provides.__proto__
+parent: provides => appContext.provides.__proto__
+child: provides => appContext.provides.__proto__
+
 断点时会发现，根组件实例时`vnode`已经生成，至于是什么时候生成的，我整理了下简化版。
 
 ```js
-// 把上文中的appContext 赋值给了 `appContext`
+// 把上文中的 appContext 赋值给了 `appContext`
 mount(rootContainer, isHydrate) {
     if (!isMounted) {
         const vnode = createVNode(rootComponent, rootProps);
@@ -545,6 +560,33 @@ mount(rootContainer, isHydrate) {
     }
 },
 ```
+
+在`runtime-core.esm-bundler.js`文件中，搜索 `provide(`可以搜到如下代码：
+
+```js
+// webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
+function applyOptions(instance, options, deferredData = [], deferredWatch = [], deferredProvide = [], asMixin = false) {
+  // ...
+  if (provideOptions) {
+      deferredProvide.push(provideOptions);
+  }
+  if (!asMixin && deferredProvide.length) {
+      deferredProvide.forEach(provideOptions => {
+          const provides = isFunction(provideOptions)
+              ? provideOptions.call(publicThis)
+              : provideOptions;
+          Reflect.ownKeys(provides).forEach(key => {
+              provide(key, provides[key]);
+          });
+      });
+  }
+  // ...
+}
+```
+
+![直观的图](./images/lagou-provides.png)，出自黄轶老师拉勾专栏，本想自己画一张图，但觉得这张挺好了。
+
+这样一来就从上到下`app.provide`提供的对象，被注入到每一个组件实例中了。
 
 // APP
 emptyAppContext.provides = Object.create(null)
@@ -585,7 +627,9 @@ import { createLogger } from 'vuex'
 
 是不是觉得豁然开朗。
 
+`Vuex`其实也是`Vue`的一个插件，知晓了`Vuex`原理，对于自己给`Vue`写插件也是会游刃有余。
 
+[Provide / Inject](https://v3.cn.vuejs.org/guide/composition-api-provide-inject.html)
 
 TODO:
 - [ ] 原型图
