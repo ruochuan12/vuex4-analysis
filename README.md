@@ -87,6 +87,11 @@ store.name = '我被修改了';
 
 看了上面的官方文档中的图，就知道是用`provide`父级组件中提供`Store`实例，用`inject`来获取到`Store`实例。
 
+TODO:
+同时来做个类比。公元前221年，秦始皇扫平六合，统一天下。如何管理天下犯难，这时找来了李斯，李斯主张郡县制。
+
+郡县制定下来后，需要选址建造郡县的政权所在地。
+
 那么接下来，带着问题：
 1、`Vuex4`作为`Vue`的插件如何实现和`Vue`结合的。
 2、`provide`、`inject`的如何实现的，每个组件如何获取到组件实例中的`Store`的。
@@ -99,7 +104,7 @@ store.name = '我被修改了';
 
 ## 3. `Vuex 4` 重大改变
 
-在`Vuex 4`发布的`release`中，`Vuex 4`发布了[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
+先来看下`Vuex 4`发布的`release`和官方文档，[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
 
 [Vuex 4 官方文档](https://next.vuex.vuejs.org/) `https://next.vuex.vuejs.org/`
 
@@ -487,7 +492,7 @@ function inject(key, defaultValue, treatDefaultAsFactory = false) {
 
 `provide`函数作用其实也算简单，1、也就是给当前组件实例上的`provides`对象属性，添加键值对`key\value`。
 
-2、还有一个作用在于当前实例中的provides对象和父级，则建立链接，也就是原型`[[prototype]]`，`__proto__`。
+2、还有一个作用是当当前组件和父级组件的`provides`相同时，在当前组件实例中的`provides`对象和父级，则建立链接，也就是原型`[[prototype]]`，(`__proto__`)。
 
 ```js
 // webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
@@ -584,6 +589,7 @@ function applyOptions(instance, options, deferredData = [], deferredWatch = [], 
   }
   if (!asMixin && deferredProvide.length) {
       deferredProvide.forEach(provideOptions => {
+          // 组件中写provides可以是对象或者是函数
           const provides = isFunction(provideOptions)
               ? provideOptions.call(publicThis)
               : provideOptions;
@@ -599,6 +605,10 @@ function applyOptions(instance, options, deferredData = [], deferredWatch = [], 
 ![直观的图](./images/lagou-provides.png)，出自黄轶老师拉勾专栏，本想自己画一张图，但觉得这张挺好了。
 
 这样一来就从上到下`app.provide`提供的对象，被注入到每一个组件实例中了。
+同时组件本身提供的provides也被注入到实例中了。
+
+这时画个图理解下
+![vuex-provides关系图](./images/vuex-provides.png)
 
 // APP
 emptyAppContext.provides = Object.create(null)
