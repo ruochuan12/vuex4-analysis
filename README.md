@@ -1,4 +1,4 @@
-# 学习 `Vuex 4` 源码整体架构，深入理解provide、inject原理
+# 学习 Vuex 4 源码整体架构，深入理解其原理及provide/inject原理
 
 ## 1. 前言
 
