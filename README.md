@@ -58,20 +58,28 @@ class Store{
 
 const store = new Store();
 var rootInstance = {
-  Store: store,
+  provides: {
+    store: store,
+  },
 };
 var parentInstance = {
-  Store: store,
+  provides: {
+    store: store,
+  }
 };
 var childInstance1 = {
-  Store: store,
+  provides: {
+    store: store,
+  }
 };
 var childInstance2 = {
-  Store: store
+  provides: {
+    store: store,
+  }
 };
 
 store.name = '我被修改了';
-// rootInstance、parentInstance、childInstance1、childInstance2 这些对象中的store都改了。
+// rootInstance、parentInstance、childInstance1、childInstance2 这些对象中的provides.store都改了。
 // 因为共享着同一个store对象。
 ```
 
@@ -476,6 +484,10 @@ function inject(key, defaultValue, treatDefaultAsFactory = false) {
 接着我们继续来看`inject`的相对应的`provide`。
 
 #### 4.5.3  Vue.provide 源码实现
+
+`provide`函数作用其实也算简单，1、也就是给当前组件实例上的`provides`对象属性，添加键值对`key\value`。
+
+2、还有一个作用在于当前实例中的provides对象和父级，则建立链接，也就是原型`[[prototype]]`，`__proto__`。
 
 ```js
 // webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
