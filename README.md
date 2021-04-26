@@ -14,13 +14,13 @@
 源码类文章，一般阅读量不高。已经有能力看懂的，自己就看了。不想看，不敢看的就不会去看源码。
 所以我的文章，尽量写得让想看源码又不知道怎么看的读者能看懂。我都是推荐使用**搭建环境断点调试源码学习**，**哪里不会点哪里**，**边调试边看，而不是硬看**。正所谓：**授人与鱼不如授人予渔**。
 
-阅读本文后你将学到：TODO:
+阅读本文后你将学到：
 
 - 1. git subtree 管理子仓库
 - 2. 如何学习`Vuex 4`源码
 - 3. Vuex 4 和 Vuex 3 的异同
 - 4. Vuex 4 composition API如何使用
-- 5. Vue.provide / inject API使用
+- 5. Vue.provide / inject API使用和原理
 - 等等
 
 如果对于谷歌浏览器调试还不是很熟悉的读者，可以看这篇文章[chrome devtools source面板](https://mp.weixin.qq.com/s/lMlq4IKtHj2V3Hv2iB723w)，写的很详细。顺带提一下，我打开的设置，source面板中支持展开搜索代码块（默认不支持），一图胜千言![code-folding](./images/code-folding.png)。谷歌浏览器是我们前端常用的工具，所以建议大家深入学习，毕竟**工欲善其事，必先利其器**。
@@ -87,15 +87,13 @@ store.name = '我被修改了';
 
 看了上面的官方文档中的图，就知道是用`provide`父级组件中提供`Store`实例，用`inject`来获取到`Store`实例。
 
-TODO:
-同时来做个类比。公元前221年，秦始皇扫平六合，统一天下。如何管理天下犯难，这时找来了李斯，李斯主张郡县制。
-
-郡县制定下来后，需要选址建造郡县的政权所在地。
-
 那么接下来，带着问题：
 1、`Vuex4`作为`Vue`的插件如何实现和`Vue`结合的。
+
 2、`provide`、`inject`的如何实现的，每个组件如何获取到组件实例中的`Store`的。
+
 3、为啥每个组件对象里都有`Store`实例对象了(渲染组件对象过程)。
+
 4、为啥我在组件中写的`provide`提供的数据，能被子级组件获取到。
 
 那么每个组件如何获取组件实例中的`Store`实例，`composition API`中本质上则是使用`inject`函数。
@@ -558,12 +556,6 @@ function createComponentInstance(vnode, parent, suspense) {
 }
 ```
 
-root => root =>
-
-root => provides => appContext.provides.__proto__
-parent: provides => appContext.provides.__proto__
-child: provides => appContext.provides.__proto__
-
 断点时会发现，根组件实例时`vnode`已经生成，至于是什么时候生成的，我整理了下简化版。
 
 ```js
@@ -602,18 +594,13 @@ function applyOptions(instance, options, deferredData = [], deferredWatch = [], 
 }
 ```
 
-![直观的图](./images/lagou-provides.png)，出自黄轶老师拉勾专栏，本想自己画一张图，但觉得这张挺好了。
+![直观的图](./images/lagou-provides.png)，出自黄轶老师拉勾专栏，本想自己画一张图，但觉得这张挺好的。
 
 这样一来就从上到下`app.provide`提供的对象，被注入到每一个组件实例中了。
-同时组件本身提供的provides也被注入到实例中了。
+同时组件本身提供的`provides`也被注入到实例中了。
 
 这时画个图理解下
 ![vuex-provides关系图](./images/vuex-provides.png)
-
-// APP
-emptyAppContext.provides = Object.create(null)
-
-instance.provides = Object.create(Object.create(null))
 
 ### 4.7 `getCurrentInstance` 获取当前实例对象
 
@@ -631,19 +618,74 @@ const MyComponent = {
 }
 ```
 
-## 5. 其他基本和Vuex3.x版本没什么区别
-
-## 6. `Vuex 4`其他能力
-
-核心模块导出了 `createLogger` 函数
+知道这个API后，我们可以在购物车例子的代码中添加一些代码。便于我们理解。
 
 ```js
-import { createLogger } from 'vuex'
+// vuex/examples/composition/shopping-cart/components/App.vue
+import { getCurrentInstance, provide } from 'vue'
+import { useStore } from 'vuex';
+setup () {
+  const store = useStore()
+  provide('ruochuan12', '微信搜索「若川视野」关注我，专注前端技术分享。')
+
+  window.AppStore = store;
+  window.AppCurrentInstance = getCurrentInstance();
+},
 ```
 
-## 7. 总结
+```js
+// vuex/examples/composition/shopping-cart/components/ProductList.vue
+setup(){
+  const store = useStore()
+
+  // 若川加入的调试代码--start
+  window.ProductListStore = store;
+  window.ProductListCurrentInstance = getCurrentInstance();
+  provide('weixin-2', 'ruochuan12');
+  provide('weixin-3', 'ruochuan12');
+  provide('weixin-4', 'ruochuan12');
+  const mp = inject('ruochuan12');
+  console.log(mp, '介绍-ProductList'); // 微信搜索「若川视野」关注我，专注前端技术分享。
+  // 若川加入的调试代码---end
+}
+```
+
+```js
+// vuex/examples/composition/shopping-cart/components/ShoppingCart.vue
+setup () {
+    const store = useStore()
+
+    // 若川加入的调试代码--start
+    window.ShoppingCartStore = store;
+    window.ShoppingCartCurrentInstance = getCurrentInstance();
+    provide('weixin', 'ruochuan12');
+    provide('weixin1', 'ruochuan12');
+    provide('weixin2', 'ruochuan12');
+    const mp = inject('ruochuan12');
+    console.log(mp, '介绍-ShoppingList'); // 微信搜索「若川视野」关注我，专注前端技术分享。
+    // 若川加入的调试代码--start
+}
+```
+
+在控制台输出这些值
+
+```js
+AppCurrentInstance
+AppCurrentInstance.provides
+ShoppingCartCurrentInstance.parent === AppCurrentInstance // true
+ShoppingCartCurrentInstance.provides
+ShoppingCartStore === AppStore // true
+ProductListStore === AppStore // true
+AppStore // store实例对象
+```
+
+![控制台输出的结果](./images/vuex-provide-inject.png)
+
+## 5. 总结
 
 本文总有讲述了`Vuex4`把`Store`实例注入到各个组件中的原理，展开讲述了`Vuex4`相对与`Vuex3`安装方式的改变`Vuex.createStore`、`app.use(store)` ，深入源码分析`Vue.inject`、`Vue.provide`实现原理。最后回顾下文章开头的图。
+
+其他基本和Vuex3.x版本没什么区别
 
 ![provide,inject示例图](./images/components_provide.png)
 
@@ -652,6 +694,10 @@ import { createLogger } from 'vuex'
 `Vuex`其实也是`Vue`的一个插件，知晓了`Vuex`原理，对于自己给`Vue`写插件也是会游刃有余。
 
 [Provide / Inject](https://v3.cn.vuejs.org/guide/composition-api-provide-inject.html)
+
+## 参考链接
+
+[官网文档 Provide / Inject](https://v3.cn.vuejs.org/guide/composition-api-provide-inject.html)
 
 TODO:
 - [ ] 原型图
