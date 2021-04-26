@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, getCurrentInstance, inject, provide } from 'vue'
 import { useStore } from 'vuex'
 import { currency } from '../currency'
 
@@ -24,7 +24,15 @@ export default {
   setup () {
     const store = useStore()
 
+    // 若川加入的调试代码--start
     window.ShoppingCartStore = store;
+    window.ShoppingCartCurrentInstance = getCurrentInstance();
+    provide('weixin', 'ruochuan12');
+    provide('weixin1', 'ruochuan12');
+    provide('weixin2', 'ruochuan12');
+    const mp = inject('ruochuan12');
+    console.log(mp, '介绍-ShoppingList'); // 微信搜索「若川视野」关注我，专注前端技术分享。
+    // 若川加入的调试代码--start
 
     const checkoutStatus = computed(() => store.state.cart.checkoutStatus)
     const products = computed(() => store.getters['cart/cartProducts'])
