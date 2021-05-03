@@ -2,14 +2,13 @@
 
 ## 1. 前言
 
->你好，我是[若川](https://lxchuan12.gitee.io)，微信搜索[「若川视野」](https://mp.weixin.qq.com/s/c3hFML3XN9KCUetDOZd-DQ)关注我，专注前端技术分享，一个愿景是帮助5年内前端开阔视野走向前列的公众号。欢迎加我微信`ruochuan12`，加群交流学习。
+>你好，我是[若川](https://lxchuan12.gitee.io)，微信搜索[「若川视野」](https://mp.weixin.qq.com/s/c3hFML3XN9KCUetDOZd-DQ)关注我，专注前端技术分享，一个愿景是帮助5年内前端开阔视野走向前列的公众号。欢迎加我微信`ruochuan12`，长期交流学习。
 
->这是`学习源码整体架构系列` 之 vuex4源码（第九篇）。
-学习源码整体架构系列文章([有哪些必看的JS库](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650746362&idx=1&sn=afe3a26cdbde1d423aae4fa99355f369&chksm=88662e76bf11a760a7f0a8565b9e8d52f5e4f056dc2682f213eec6475127d71f6f1d203d6c3a&scene=21#wechat_redirect))：[jQuery](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744496&idx=1&sn=0f149e9436cb77bf9fc1bfb47aedd334&chksm=8866253cbf11ac2a53b385153cd8e9a0c4018b6b566750cf0b5d61d17afa2e90b52d36db8054&scene=21#wechat_redirect)、[underscore](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744505&idx=1&sn=26801ad6c2a5eb9cf64e7556b6478d39&chksm=88662535bf11ac23eea3f76335f6777e2acbf4ee660b5616148e14ffbefc0e8520806db21056&scene=21#wechat_redirect)、[lodash](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744514&idx=1&sn=776336d888d06bfe72cb4d5b07a4b90c&chksm=8866254ebf11ac5822fc078082603f77a4b4d9b487c9f4d7069acb12c727c46c75946fa9b0cd&scene=21#wechat_redirect)、[sentry](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744551&idx=1&sn=4d79c2fa97d7c737aab70055c7ec7fa3&chksm=8866256bbf11ac7d9e2269f3638a705d5e5f45056d53ad2faf17b814e4c46ec6b0ba52571bde&scene=21#wechat_redirect)、[vuex](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)、[axios](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744604&idx=1&sn=51d8d865c9848fd59f7763f5fb9ce789&chksm=88662490bf11ad86061ae76ff71a1177eeddab02c38d046eecd0e1ad25dc16f7591f91e9e3b2&scene=21#wechat_redirect)、[koa](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744703&idx=1&sn=cfb9580241228993e4d376017234ff79&chksm=886624f3bf11ade5f5e37520f6b1291417bcea95f222906548b863f4b61d20e7508eb419eb85&token=192125900&lang=zh_CN&scene=21#wechat_redirect)、[redux](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650745007&idx=1&sn=1fd6f3caeff6ab61b8d5f644a1dbb7df&chksm=88662b23bf11a23573509a01f941d463b0c61e890b2069427c78c26296197077da359c522fe8&scene=21#wechat_redirect)。整体架构这词语好像有点大，姑且就算是源码整体结构吧，主要就是学习是代码整体结构，不深究其他不是主线的具体函数的实现。本篇文章学习的是实际仓库的代码。
+>这是`学习源码整体架构系列` 之 vuex4源码（第九篇）。学习源码整体架构系列文章([有哪些必看的JS库](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650746362&idx=1&sn=afe3a26cdbde1d423aae4fa99355f369&chksm=88662e76bf11a760a7f0a8565b9e8d52f5e4f056dc2682f213eec6475127d71f6f1d203d6c3a&scene=21#wechat_redirect))：[jQuery](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744496&idx=1&sn=0f149e9436cb77bf9fc1bfb47aedd334&chksm=8866253cbf11ac2a53b385153cd8e9a0c4018b6b566750cf0b5d61d17afa2e90b52d36db8054&scene=21#wechat_redirect)、[underscore](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744505&idx=1&sn=26801ad6c2a5eb9cf64e7556b6478d39&chksm=88662535bf11ac23eea3f76335f6777e2acbf4ee660b5616148e14ffbefc0e8520806db21056&scene=21#wechat_redirect)、[lodash](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744514&idx=1&sn=776336d888d06bfe72cb4d5b07a4b90c&chksm=8866254ebf11ac5822fc078082603f77a4b4d9b487c9f4d7069acb12c727c46c75946fa9b0cd&scene=21#wechat_redirect)、[sentry](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744551&idx=1&sn=4d79c2fa97d7c737aab70055c7ec7fa3&chksm=8866256bbf11ac7d9e2269f3638a705d5e5f45056d53ad2faf17b814e4c46ec6b0ba52571bde&scene=21#wechat_redirect)、[vuex](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)、[axios](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744604&idx=1&sn=51d8d865c9848fd59f7763f5fb9ce789&chksm=88662490bf11ad86061ae76ff71a1177eeddab02c38d046eecd0e1ad25dc16f7591f91e9e3b2&scene=21#wechat_redirect)、[koa](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744703&idx=1&sn=cfb9580241228993e4d376017234ff79&chksm=886624f3bf11ade5f5e37520f6b1291417bcea95f222906548b863f4b61d20e7508eb419eb85&token=192125900&lang=zh_CN&scene=21#wechat_redirect)、[redux](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650745007&idx=1&sn=1fd6f3caeff6ab61b8d5f644a1dbb7df&chksm=88662b23bf11a23573509a01f941d463b0c61e890b2069427c78c26296197077da359c522fe8&scene=21#wechat_redirect)。整体架构这词语好像有点大，姑且就算是源码整体结构吧，主要就是学习是代码整体结构，不深究其他不是主线的具体函数的实现。本篇文章学习的是实际仓库的代码。
 
 >[本文仓库地址](https://github.com/lxchuan12/vuex4-analysis.git)：`git clone https://github.com/lxchuan12/vuex4-analysis.git`，本文最佳阅读方式，克隆仓库自己动手调试，容易吸收消化。
 
->**要是有人说到怎么读源码，正在读文章的你能推荐我的源码系列文章，那真是无以为报**。
+>**要是有人说到怎么读源码，正在读文章的你能推荐我的源码系列文章，那真是无以为报啊**。
 
 源码类文章，一般阅读量不高。已经有能力看懂的，自己就看了。不想看，不敢看的就不会去看源码。
 所以我的文章，尽量写得让想看源码又不知道怎么看的读者能看懂。我都是推荐使用**搭建环境断点调试源码学习**，**哪里不会点哪里**，**边调试边看，而不是硬看**。正所谓：**授人与鱼不如授人予渔**。
@@ -17,10 +16,10 @@
 阅读本文后你将学到：
 
 - 1. git subtree 管理子仓库
-- 2. 如何学习`Vuex 4`源码
+- 2. 如何学习`Vuex 4`源码、理解`Vuex`原理
 - 3. Vuex 4 和 Vuex 3 的异同
 - 4. Vuex 4 composition API如何使用
-- 5. Vue.provide / inject API使用和原理
+- 5. `Vue.provide / Vue.inject` API使用和原理
 - 等等
 
 如果对于谷歌浏览器调试还不是很熟悉的读者，可以看这篇文章[chrome devtools source面板](https://mp.weixin.qq.com/s/lMlq4IKtHj2V3Hv2iB723w)，写的很详细。顺带提一下，我打开的设置，source面板中支持展开搜索代码块（默认不支持），一图胜千言![code-folding](./images/code-folding.png)。谷歌浏览器是我们前端常用的工具，所以建议大家深入学习，毕竟**工欲善其事，必先利其器**。
@@ -31,7 +30,7 @@
 
 把我的vuex4源码仓库 `git clone https://github.com/lxchuan12/vuex4-analysis.git`克隆下来，顺便star一下我的[vuex4源码学习仓库](https://github.com/lxchuan12/vuex4-analysis.git)^_^。**跟着文章节奏调试和示例代码调试，用chrome动手调试印象更加深刻**。文章长段代码不用细看，可以调试时再细看。看这类源码文章百遍，可能不如自己多调试几遍，大胆猜测，小心求证。也欢迎加我微信交流`ruochuan12`。
 
-## 2. `Vuex` 原理简述
+## 2. Vuex 原理简述
 
 **结论先行**：`Vuex`原理可以拆解为三个关键点。
 第一点、其实就是每个组件实例里都注入了`Store`实例。
@@ -85,7 +84,7 @@ store.name = '我被修改了';
 
 ![provide,inject示例图](./images/components_provide.png)
 
-看了上面的官方文档中的图，就知道是用`provide`父级组件中提供`Store`实例，用`inject`来获取到`Store`实例。
+看了上面的官方文档中的图，大概知道是用`provide`父级组件中提供`Store`实例，用`inject`来获取到`Store`实例。
 
 那么接下来，带着问题：
 1、`Vuex4`作为`Vue`的插件如何实现和`Vue`结合的。
@@ -94,17 +93,17 @@ store.name = '我被修改了';
 
 3、为啥每个组件对象里都有`Store`实例对象了(渲染组件对象过程)。
 
-4、为啥我在组件中写的`provide`提供的数据，能被子级组件获取到。
+4、为啥在组件中写的`provide`提供的数据，能被子级组件获取到。
 
 那么每个组件如何获取组件实例中的`Store`实例，`composition API`中本质上则是使用`inject`函数。
 
 全局的`Store` 实例对象。通过`Vue.reactive()`监测数据。
 
-## 3. `Vuex 4` 重大改变
+## 3. Vuex 4 重大改变
 
-先来看下`Vuex 4`发布的`release`和官方文档，[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
+来看下`Vuex 4`发布的`release`和官方文档迁移提到的重大改变，[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
 
-[Vuex 4 官方文档](https://next.vuex.vuejs.org/) `https://next.vuex.vuejs.org/`
+[Migrating to 4.0 from 3.x](https://next.vuex.vuejs.org/guide/migrating-to-4-0-from-3-x.html)
 
 `Vuex 4`的重点是兼容性。`Vuex 4`支持使用`Vue 3`开发，并且直接提供了和`Vuex 3`完全相同的`API`，因此用户可以在`Vue 3`项目中复用现有的`Vuex`代码。
 
@@ -148,9 +147,9 @@ import { createLogger } from 'vuex'
 
 **接下来我们从源码的角度来看这些重大改变**。
 
-## 4. 从源码角度看 `Vuex 4` 重大变化
+## 4. 从源码角度看 Vuex 4 重大变化
 
-### 4.1 `chrome` 调试 `Vuex 4` 源码准备工作
+### 4.1 chrome 调试 Vuex 4 源码准备工作
 
 ```sh
 git subtree add --prefix=vuex https://github.com/vuejs/vuex.git 4.0
@@ -162,7 +161,7 @@ git subtree add --prefix=vuex https://github.com/vuejs/vuex.git 4.0
 
 把`vuex/examples/webpack.config.js`，加个`devtool: 'source-map'`，这样就能开启`sourcemap`调试源码了。
 
-我们使用项目的中购物车的例子调试，贯穿全文。
+我们使用项目中的购物车的例子调试，贯穿全文。
 
 ```sh
 git clone https://github.com/lxchuan12/vuex4-analysis.git
@@ -175,7 +174,7 @@ npm run dev
 # 按 F12 打开调试工具，source面板 => page => webpack:// => .
 ```
 
-据说一图胜千言，这时简单截个图。
+据说一图胜千言，这时简单截个调试的图。
 
 ![vuex debugger](./images/debugger.png)
 
@@ -402,7 +401,7 @@ app.component('child-component', {
 
 这之前先来看下组合式`API`中，我们如何使用`Vuex4`，这是线索。
 
-### 4.5 `composition API` 中如何使用`Vuex 4`
+### 4.5 composition API 中如何使用Vuex 4
 
 接着我们找到如下文件，`useStore`是我们断点的对象。
 
@@ -488,7 +487,7 @@ function inject(key, defaultValue, treatDefaultAsFactory = false) {
 
 #### 4.5.3  Vue.provide 源码实现
 
-`provide`函数作用其实也算简单，1、也就是给当前组件实例上的`provides`对象属性，添加键值对`key\value`。
+`provide`函数作用其实也算简单，1、也就是给当前组件实例上的`provides`对象属性，添加键值对`key/value`。
 
 2、还有一个作用是当当前组件和父级组件的`provides`相同时，在当前组件实例中的`provides`对象和父级，则建立链接，也就是原型`[[prototype]]`，(`__proto__`)。
 
@@ -602,7 +601,7 @@ function applyOptions(instance, options, deferredData = [], deferredWatch = [], 
 这时画个图理解下
 ![vuex-provides关系图](./images/vuex-provides.png)
 
-### 4.7 `getCurrentInstance` 获取当前实例对象
+### 4.7 getCurrentInstance 获取当前实例对象
 
 `getCurrentInstance` 支持访问内部组件实例，用于高阶用法或库的开发。
 
@@ -698,6 +697,10 @@ AppStore // store实例对象
 ## 参考链接
 
 [官网文档 Provide / Inject](https://v3.cn.vuejs.org/guide/composition-api-provide-inject.html)
+[github 仓库 provide/inject 源码](https://github.com/vuejs/vue-next/blob/HEAD/packages/runtime-core/src/apiInject.ts)
+[github 仓库 provide/inject 测试](https://github.com/vuejs/vue-next/blob/HEAD/packages/runtime-core/__tests__/apiInject.spec.ts)
+[Vuex 4 官方文档](https://next.vuex.vuejs.org/) `https://next.vuex.vuejs.org/`
+
 
 TODO:
 - [ ] 原型图
