@@ -3,12 +3,15 @@ theme: smartblue
 highlight: dracula
 ---
 # 学习 Vuex 4 源码整体架构，深入理解其原理及provide/inject原理
+# 看了 vuex4 源码后，vuex4 和 provide/inject 原来就是妙用了原型链？
 
 ## 1. 前言
 
 >你好，我是[若川](https://lxchuan12.gitee.io)，微信搜索[「若川视野」](https://mp.weixin.qq.com/s/c3hFML3XN9KCUetDOZd-DQ)关注我，专注前端技术分享，一个愿景是帮助5年内前端开阔视野走向前列的公众号。欢迎加我微信`ruochuan12`，长期交流学习。
 
->这是`学习源码整体架构系列` 之 vuex4 源码（第十篇）。学习源码整体架构系列文章([有哪些必看的JS库](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650746362&idx=1&sn=afe3a26cdbde1d423aae4fa99355f369&chksm=88662e76bf11a760a7f0a8565b9e8d52f5e4f056dc2682f213eec6475127d71f6f1d203d6c3a&scene=21#wechat_redirect))：[jQuery](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744496&idx=1&sn=0f149e9436cb77bf9fc1bfb47aedd334&chksm=8866253cbf11ac2a53b385153cd8e9a0c4018b6b566750cf0b5d61d17afa2e90b52d36db8054&scene=21#wechat_redirect)、[underscore](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744505&idx=1&sn=26801ad6c2a5eb9cf64e7556b6478d39&chksm=88662535bf11ac23eea3f76335f6777e2acbf4ee660b5616148e14ffbefc0e8520806db21056&scene=21#wechat_redirect)、[lodash](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744514&idx=1&sn=776336d888d06bfe72cb4d5b07a4b90c&chksm=8866254ebf11ac5822fc078082603f77a4b4d9b487c9f4d7069acb12c727c46c75946fa9b0cd&scene=21#wechat_redirect)、[sentry](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744551&idx=1&sn=4d79c2fa97d7c737aab70055c7ec7fa3&chksm=8866256bbf11ac7d9e2269f3638a705d5e5f45056d53ad2faf17b814e4c46ec6b0ba52571bde&scene=21#wechat_redirect)、[vuex](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)、[axios](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744604&idx=1&sn=51d8d865c9848fd59f7763f5fb9ce789&chksm=88662490bf11ad86061ae76ff71a1177eeddab02c38d046eecd0e1ad25dc16f7591f91e9e3b2&scene=21#wechat_redirect)、[koa](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744703&idx=1&sn=cfb9580241228993e4d376017234ff79&chksm=886624f3bf11ade5f5e37520f6b1291417bcea95f222906548b863f4b61d20e7508eb419eb85&token=192125900&lang=zh_CN&scene=21#wechat_redirect)、[redux](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650745007&idx=1&sn=1fd6f3caeff6ab61b8d5f644a1dbb7df&chksm=88662b23bf11a23573509a01f941d463b0c61e890b2069427c78c26296197077da359c522fe8&scene=21#wechat_redirect)、[vue-devtools 直接打开文件功能揭秘](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650751278&idx=1&sn=3ac07b110e84e3ded5fa4ec4407ce13b&chksm=886642a2bf11cbb4cea35f0d208815c39c9cd13a0522e7cdc4a466bc55cb5b3071143a38bb04&token=1828368955&lang=zh_CN#rd)。整体架构这词语好像有点大，姑且就算是源码整体结构吧，主要就是学习是代码整体结构，不深究其他不是主线的具体函数的实现。本篇文章学习的是实际仓库的代码。
+>这是`学习源码整体架构系列` 之 vuex4 源码（第十篇）。学习源码整体架构系列文章([有哪些必看的JS库](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650746362&idx=1&sn=afe3a26cdbde1d423aae4fa99355f369&chksm=88662e76bf11a760a7f0a8565b9e8d52f5e4f056dc2682f213eec6475127d71f6f1d203d6c3a&scene=21#wechat_redirect))：[jQuery](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744496&idx=1&sn=0f149e9436cb77bf9fc1bfb47aedd334&chksm=8866253cbf11ac2a53b385153cd8e9a0c4018b6b566750cf0b5d61d17afa2e90b52d36db8054&scene=21#wechat_redirect)、[underscore](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744505&idx=1&sn=26801ad6c2a5eb9cf64e7556b6478d39&chksm=88662535bf11ac23eea3f76335f6777e2acbf4ee660b5616148e14ffbefc0e8520806db21056&scene=21#wechat_redirect)、[lodash](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744514&idx=1&sn=776336d888d06bfe72cb4d5b07a4b90c&chksm=8866254ebf11ac5822fc078082603f77a4b4d9b487c9f4d7069acb12c727c46c75946fa9b0cd&scene=21#wechat_redirect)、[sentry](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744551&idx=1&sn=4d79c2fa97d7c737aab70055c7ec7fa3&chksm=8866256bbf11ac7d9e2269f3638a705d5e5f45056d53ad2faf17b814e4c46ec6b0ba52571bde&scene=21#wechat_redirect)、[vuex](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744584&idx=1&sn=b14f8a762f132adcf0f7e3e075ee2ded&chksm=88662484bf11ad922ed27d45873af838298949eea381545e82a511cabf0c6fc6876a8370c6fb&scene=21#wechat_redirect)、[axios](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744604&idx=1&sn=51d8d865c9848fd59f7763f5fb9ce789&chksm=88662490bf11ad86061ae76ff71a1177eeddab02c38d046eecd0e1ad25dc16f7591f91e9e3b2&scene=21#wechat_redirect)、[koa](https://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650744703&idx=1&sn=cfb9580241228993e4d376017234ff79&chksm=886624f3bf11ade5f5e37520f6b1291417bcea95f222906548b863f4b61d20e7508eb419eb85&token=192125900&lang=zh_CN&scene=21#wechat_redirect)、[redux](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650745007&idx=1&sn=1fd6f3caeff6ab61b8d5f644a1dbb7df&chksm=88662b23bf11a23573509a01f941d463b0c61e890b2069427c78c26296197077da359c522fe8&scene=21#wechat_redirect)、[vue-devtools 直接打开文件功能揭秘](http://mp.weixin.qq.com/s?__biz=MzA5MjQwMzQyNw==&mid=2650751278&idx=1&sn=3ac07b110e84e3ded5fa4ec4407ce13b&chksm=886642a2bf11cbb4cea35f0d208815c39c9cd13a0522e7cdc4a466bc55cb5b3071143a38bb04&token=1828368955&lang=zh_CN#rd)。
+
+>**10篇源码系列文章小成就达成**，从19年7月开始写，19年写了6篇，20年写了2篇，今年写了2篇。算是一个完结吧。短时间内应该暂时不更新这个系列了。主要是投入的时间和精力比较多，看的人很少，得到的反馈也比较少。之后先写其他文章吧。欢迎持续关注我（[若川](https://lxchuan12.gitee.io)）。
 
 >[本文仓库地址](https://github.com/lxchuan12/vuex4-analysis.git)：`git clone https://github.com/lxchuan12/vuex4-analysis.git`，本文最佳阅读方式，克隆仓库自己动手调试，容易吸收消化。
 
@@ -18,11 +21,11 @@ highlight: dracula
 
 阅读本文后你将学到：
 
-- 1. git subtree 管理子仓库
+- 1. `git subtree` 管理子仓库
 - 2. 如何学习`Vuex 4`源码、理解`Vuex`原理
-- 3. Vuex 4 和 Vuex 3 的异同
-- 4. Vuex 4 composition API如何使用
-- 5. `Vue.provide / Vue.inject` API使用和原理
+- 3. `Vuex 4` 和 `Vuex 3` 的异同
+- 4. `Vuex 4` `composition API` 如何使用
+- 5. `Vue.provide / Vue.inject` API 使用和原理
 - 6. 如何写一个 `Vue3` 插件
 - 等等
 
@@ -32,7 +35,7 @@ highlight: dracula
 
 ### 1.1 本文阅读最佳方式
 
-把我的vuex4源码仓库 `git clone https://github.com/lxchuan12/vuex4-analysis.git`克隆下来，顺便star一下我的[vuex4源码学习仓库](https://github.com/lxchuan12/vuex4-analysis.git)^_^。**跟着文章节奏调试和示例代码调试，用chrome动手调试印象更加深刻**。文章长段代码不用细看，可以调试时再细看。看这类源码文章百遍，可能不如自己多调试几遍，大胆猜测，小心求证。也欢迎加我微信交流`ruochuan12`。
+把我的`vuex4`源码仓库 `git clone https://github.com/lxchuan12/vuex4-analysis.git`克隆下来，顺便star一下我的[vuex4源码学习仓库](https://github.com/lxchuan12/vuex4-analysis.git)^_^。**跟着文章节奏调试和示例代码调试，用chrome动手调试印象更加深刻**。文章长段代码不用细看，可以调试时再细看。看这类源码文章百遍，可能不如自己多调试几遍，大胆猜测，小心求证。也欢迎加我微信交流`ruochuan12`。
 
 ## 2. Vuex 原理简述
 
@@ -49,10 +52,10 @@ highlight: dracula
 // 简版
 class Store{
   constructor(){
-    this.name = 'Store 实例';
+    this._state = 'Store 实例';
   }
-  dispatch(){
-
+  dispatch(val){
+    this.__state = val;
   }
   commit(){}
   // 省略
@@ -61,27 +64,33 @@ class Store{
 
 const store = new Store();
 var rootInstance = {
+  parent: null,
   provides: {
     store: store,
   },
 };
 var parentInstance = {
+  parent: rootInstance,
   provides: {
     store: store,
   }
 };
 var childInstance1 = {
+  parent: parentInstance,
   provides: {
     store: store,
   }
 };
 var childInstance2 = {
+  parent: parentInstance,
   provides: {
     store: store,
   }
 };
 
-store.name = '我被修改了';
+store.dispatch('我被修改了');
+// store Store {_state: "我被修改了"}
+
 // rootInstance、parentInstance、childInstance1、childInstance2 这些对象中的provides.store都改了。
 // 因为共享着同一个store对象。
 ```
@@ -91,23 +100,27 @@ store.name = '我被修改了';
 看了上面的官方文档中的图，大概知道是用`provide`父级组件中提供`Store`实例，用`inject`来获取到`Store`实例。
 
 那么接下来，带着问题：
-1、`Vuex4`作为`Vue`的插件如何实现和`Vue`结合的。
 
-2、`provide`、`inject`的如何实现的，每个组件如何获取到组件实例中的`Store`的。
+1、为什么修改了实例`store`里的属性，变更后会触发视图更新。
 
-3、为啥每个组件对象里都有`Store`实例对象了(渲染组件对象过程)。
+2、`Vuex4`作为`Vue`的插件如何实现和`Vue`结合的。
 
-4、为啥在组件中写的`provide`提供的数据，能被子级组件获取到。
+3、`provide`、`inject`的如何实现的，每个组件如何获取到组件实例中的`Store`的。
 
+4、为什么每个组件对象里都有`Store`实例对象了(渲染组件对象过程)。
+
+5、为什么在组件中写的`provide`提供的数据，能被子级组件获取到。
+
+TODO:
 那么每个组件如何获取组件实例中的`Store`实例，`composition API`中本质上则是使用`inject`函数。
 
 全局的`Store` 实例对象。通过`Vue.reactive()`监测数据。
 
 ## 3. Vuex 4 重大改变
 
-来看下`Vuex 4`发布的`release`和官方文档迁移提到的重大改变，[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
+在看源码之前，先来看下`Vuex 4`发布的`release`和官方文档迁移提到的重大改变，[Vuex 4 release](https://github.com/vuejs/vuex/releases/tag/v4.0.0)`https://github.com/vuejs/vuex/releases/tag/v4.0.0`。
 
-[Migrating to 4.0 from 3.x](https://next.vuex.vuejs.org/guide/migrating-to-4-0-from-3-x.html)
+[从 3.x 迁移到 4.0](https://next.vuex.vuejs.org/zh/guide/migrating-to-4-0-from-3-x.html)
 
 `Vuex 4`的重点是兼容性。`Vuex 4`支持使用`Vue 3`开发，并且直接提供了和`Vuex 3`完全相同的`API`，因此用户可以在`Vue 3`项目中复用现有的`Vuex`代码。
 
@@ -161,7 +174,7 @@ git subtree add --prefix=vuex https://github.com/vuejs/vuex.git 4.0
 
 这种方式保留了`vuex4`仓库的`git`记录信息。更多`git subtree`使用方式可以查看这篇文章[用 Git Subtree 在多个 Git 项目间双向同步子项目，附简明使用手册](https://segmentfault.com/a/1190000003969060)。
 
-作为读者的你，只需克隆[我的`Vuex 4`源码仓库](https://github.com/lxchuan12/vuex4-analysis.git) `https://github.com/lxchuan12/vuex4-analysis.git` 即可，也欢迎`star`一下。
+作为读者朋友的你，只需克隆[我的`Vuex 4`源码仓库](https://github.com/lxchuan12/vuex4-analysis.git) `https://github.com/lxchuan12/vuex4-analysis.git` 即可，也欢迎`star`一下。
 
 把`vuex/examples/webpack.config.js`，加个`devtool: 'source-map'`，这样就能开启`sourcemap`调试源码了。
 
@@ -252,6 +265,8 @@ function resetStoreState (store, state, hot) {
 
 `Vue.reactive` 函数方法，本文就不展开讲解了。因为展开来讲，又可以写篇新的文章了。只需要知道主要功能是监测数据改变，变更视图即可。
 
+这也就算解答了开头提出的第一个问题。
+
 跟着断点我们继续看`app.use()`方法，`Vue`提供的插件机制。
 
 ### 4.3 app.use() 方法
@@ -325,6 +340,7 @@ export class Store{
 第二句则是为`option API`提供的。
 
 接着断点这两句，按`F11`来看`app.provide`实现。
+
 #### 4.4.1 app.provide
 
 简单来说就是给`context`的`provides`属性中加了`store` = **Store实例对象**。
@@ -350,7 +366,7 @@ const context = createAppContext();
 ```
 
 接着我们来看函数 `createAppContext`。
-context 为上下文
+`context` 为上下文
 
 ```js
 // webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
@@ -400,7 +416,7 @@ app.component('child-component', {
 
 `app.provide` 其实是用于`composition API`使用的。
 
-但这只是文档中这样说的，为啥就每个组件实例都能访问的呢，我们继续深入探究下原理。
+但这只是文档中这样说的，为什么就每个组件实例都能访问的呢，我们继续深入探究下原理。
 
 接下来，我们看下源码具体实现，为什么每个组件实例中都能获取到的。
 
@@ -521,6 +537,53 @@ function provide(key, value) {
 }
 ```
 
+`provide`函数中的这段，可能不是那么好理解。
+
+```js
+if (parentProvides === provides) {
+    provides = currentInstance.provides = Object.create(parentProvides);
+}
+```
+
+我们来举个例子消化一下。
+
+```js
+var currentInstance = { provides: { store: { __state: 'Store实例' }  } };
+var provides = currentInstance.provides;
+// 这句是我手动加的，在后文中则是创建实例时就是写的同一个对象，当然就会相等了。
+var parentProvides = provides;
+if(parentProvides === provides){
+    provides =  currentInstance.provides = Object.create(parentProvides);
+}
+```
+
+经过一次执行这个后，`currentInstance` 就变成了这样。
+
+```js
+{
+  provides: {
+    // 可以容纳其他属性，比如用户自己写的
+    __proto__ : { store: { __state: 'Store实例' }  }
+  }
+}
+```
+
+执行第二次时，`currentInstance` 则是：
+
+```js
+{
+  provides: {
+    // 可以容纳其他属性，比如用户自己写的
+    __proto__: {
+        // 可以容纳其他属性，比如用户自己写的
+        __proto__ : { store: { __state: 'Store实例' }  }
+    }
+  }
+}
+```
+
+以此类推，多执行`provide`几次，原型链就越长。
+
 上文`inject`、`provide`函数中都有个变量`currentInstance`当前实例，那么当前实例对象是怎么来的呢。
 
 为什么每个组件就能访问到，依赖注入的思想。
@@ -574,7 +637,29 @@ mount(rootContainer, isHydrate) {
 },
 ```
 
-在`runtime-core.esm-bundler.js`文件中，搜索 `provide(`可以搜到如下代码：
+其中 `Object.create` 其实就是建立原型关系。这时放一张图，一图胜千言。
+
+![直观的图](./images/lagou-provides.png)，出自黄轶老师拉勾专栏，本想自己画一张图，但觉得这张挺好的。
+
+#### 4.6.1 组件实例生成了，那怎么把它们结合呢
+
+这时，也有一个讨巧的方法，在`runtime-core.esm-bundler.js`文件中，搜索 `provide(`可以搜到如下代码：
+
+这段代码其实看起来很复杂的样式，实际上主要就是把用户在组件中写的`provides`对象或者函数返回值遍历, 生成类似这样的实例对象：
+
+```js
+// 当前组件实例
+{
+  parent: '父级的实例',
+  provides: {
+    // 可以容纳其他属性，比如用户自己写的
+    __proto__: {
+        // 可以容纳其他属性，比如用户自己写的
+        __proto__ : { store: { __state: 'Store实例' }  }
+    }
+  }
+}
+```
 
 ```js
 // webpack:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
@@ -585,7 +670,7 @@ function applyOptions(instance, options, deferredData = [], deferredWatch = [], 
   }
   if (!asMixin && deferredProvide.length) {
       deferredProvide.forEach(provideOptions => {
-          // 组件中写provides可以是对象或者是函数
+          // 组件中写 provides 可以是对象或者是函数
           const provides = isFunction(provideOptions)
               ? provideOptions.call(publicThis)
               : provideOptions;
@@ -598,13 +683,9 @@ function applyOptions(instance, options, deferredData = [], deferredWatch = [], 
 }
 ```
 
-![直观的图](./images/lagou-provides.png)，出自黄轶老师拉勾专栏，本想自己画一张图，但觉得这张挺好的。
+这样一来就从上到下`app.provide`提供的对象，被注入到每一个组件实例中了。同时组件本身提供的`provides`也被注入到实例中了。
 
-这样一来就从上到下`app.provide`提供的对象，被注入到每一个组件实例中了。
-同时组件本身提供的`provides`也被注入到实例中了。
-
-这时画个图理解下
-![vuex-provides关系图](./images/vuex-provides.png)
+接着我们跟着项目来验证下，上文中的表述。翻看`Vue3`文档可以发现有一个`API`可以获取当前组件实例。
 
 ### 4.7 getCurrentInstance 获取当前实例对象
 
@@ -685,11 +766,152 @@ AppStore // store实例对象
 
 ![控制台输出的结果](./images/vuex-provide-inject.png)
 
+看控制台截图输出的例子，其实跟上文写的类似。这时如果写了顺手自己注入了一个provide('store': '空字符串')，那么顺着原型链，肯定是先找到用户写的`store`，这时Vuex无法正常使用，就报错了。
+
+当然`vuex4`提供了注入的`key`可以不是`store`的写法，这时就不和用户的冲突了。
+
+```js
+export class Store{
+    // 省略若干代码...
+    install (app, injectKey) {
+        // 为 composition API 中使用
+        //  可以传入 injectKey  如果没传取默认的 storeKey 也就是 store
+        app.provide(injectKey || storeKey, this)
+        // 为 option API 中使用
+        app.config.globalProperties.$store = this
+    }
+    // 省略若干代码...
+}
+```
+
+```js
+export function useStore (key = null) {
+  return inject(key !== null ? key : storeKey)
+}
+```
+
+## 5. 解答下开头提出的5个问题
+
+统一解答下开头提出的5个问题：
+
+1、为什么修改了实例`store`里的属性，变更后会触发视图更新。
+
+答：使用`Vue` 中的 `reactive` 方法监测数据变化的。
+
+```js
+class Store{
+  constructor (options = {}){
+    // 省略若干代码...
+    this._modules = new ModuleCollection(options)
+    const state = this._modules.root.state
+    resetStoreState(this, state)
+    // 省略若干代码...
+  }
+}
+function resetStoreState (store, state, hot) {
+  // 省略若干代码...
+  store._state = reactive({
+    data: state
+  })
+  // 省略若干代码...
+}
+```
+
+2、`Vuex4`作为`Vue`的插件如何实现和`Vue`结合的。
+
+答：`app.use(store)` 时会执行`Store`中的`install`方法，一句是为 `composition API` 中使用，提供`Store`实例对象到根实例中。一句则是注入到根实例的全局属性中，为 `option API` 中使用。它们都会在组件生成时，注入到每个组件实例中。
+
+```js
+export class Store{
+    // 省略若干代码...
+    install (app, injectKey) {
+        // 为 composition API 中使用
+        //  可以传入 injectKey  如果没传取默认的 storeKey 也就是 store
+        app.provide(injectKey || storeKey, this)
+        // 为 option API 中使用
+        app.config.globalProperties.$store = this
+    }
+    // 省略若干代码...
+}
+```
+
+3、`provide`、`inject`的如何实现的，每个组件如何获取到组件实例中的`Store`的。
+
+5、为什么在组件中写的`provide`提供的数据，能被子级组件获取到。
+
+答：`provide`函数建立原型链区分出组件实例用户自己写的属性和系统注入的属性。`inject`函数则是通过原型链找父级实例中的`provides`对象中的属性。
+
+```js
+// 有删减
+function provide(){
+    let provides = currentInstance.provides;
+    const parentProvides = currentInstance.parent && currentInstance.parent.provides;
+    if (parentProvides === provides) {
+        provides = currentInstance.provides = Object.create(parentProvides);
+    }
+    provides[key] = value;
+}
+```
+
+```js
+// 有删减
+function inject(){
+    const provides = instance.parent == null
+        ? instance.vnode.appContext && instance.vnode.appContext.provides
+        : instance.parent.provides;
+    if (provides && key in provides) {
+        return provides[key];
+    }
+}
+```
+
+也就是类似这样的实例：
+
+```js
+// 当前组件实例
+{
+  parent: '父级的实例',
+  provides: {
+    // 可以容纳其他属性，比如用户自己写的
+    __proto__: {
+        // 可以容纳其他属性，比如用户自己写的
+        __proto__ : { store: { __state: 'Store实例' }  }
+    }
+  }
+}
+```
+
+4、为什么每个组件对象里都有`Store`实例对象了(渲染组件对象过程)。
+
+答：渲染生成组件实例时，调用`createComponentInstance`，注入到组件实例的`provides`中。
+
+```js
+function createComponentInstance(vnode, parent, suspense) {
+    const type = vnode.type;
+    const appContext = (parent ? parent.appContext : vnode.appContext) || emptyAppContext;
+    const instance = {
+        parent,
+        appContext,
+        // ...
+        provides: parent ? parent.provides : Object.create(appContext.provides),
+        // ...
+    }
+    // ...
+    return instance;
+}
+```
+
+6. 你怎么知道那么多的
+
+答：因为社区有人写了[`Vue4`源码文章](https://lxchuan12.gitee.io/vuex4)。
+
 ## 5. 总结
 
-本文总有讲述了`Vuex4`把`Store`实例注入到各个组件中的原理，展开讲述了`Vuex4`相对与`Vuex3`安装方式的改变`Vuex.createStore`、`app.use(store)` ，深入源码分析`Vue.inject`、`Vue.provide`实现原理。最后回顾下文章开头的图。
+本文总有讲述了`Vuex4`把`Store`实例注入到各个组件中的原理，展开讲述了`Vuex4`相对与`Vuex3`安装方式的改变`Vuex.createStore`、`app.use(store)` ，深入源码分析`Vue.inject`、`Vue.provide`实现原理。
 
-其他基本和Vuex3.x版本没什么区别
+`Vuex4` 除了安装方式和监测数据变化方式使用了`Vue.reactive`，其他基本和`Vuex3.x`版本没什么区别。
+
+最后回顾下文章开头的图，可以说就是原型链的妙用。
 
 ![provide,inject示例图](./images/components_provide.png)
 
@@ -697,23 +919,11 @@ AppStore // store实例对象
 
 `Vuex`其实也是`Vue`的一个插件，知晓了`Vuex`原理，对于自己给`Vue`写插件也是会游刃有余。
 
-[Provide / Inject](https://v3.cn.vuejs.org/guide/composition-api-provide-inject.html)
+>如果读者朋友发现有不妥或可改善之处，再或者哪里没写明白的地方，欢迎评论指出，也欢迎加我微信 `ruochuan12` 交流。另外觉得写得不错，对您有些许帮助，可以点赞、评论、转发分享，也是对我的一种支持，万分感谢。如果能关注我的前端公众号：[「若川视野」](https://mp.weixin.qq.com/s/c3hFML3XN9KCUetDOZd-DQ)，就更好啦。
 
 ## 参考链接
 
 [官网文档 Provide / Inject](https://v3.cn.vuejs.org/guide/composition-api-provide-inject.html)
 [github 仓库 provide/inject 源码](https://github.com/vuejs/vue-next/blob/HEAD/packages/runtime-core/src/apiInject.ts)
 [github 仓库 provide/inject 测试](https://github.com/vuejs/vue-next/blob/HEAD/packages/runtime-core/__tests__/apiInject.spec.ts)
-[Vuex 4 官方文档](https://next.vuex.vuejs.org/) `https://next.vuex.vuejs.org/`
-
-
-TODO:
-- [ ] 原型图
-- [x] 补devtools图
-- [x] 补组件图
-- [ ] 补 appContext
-- [ ] 补源码、挑战耐心的
-- [ ] 补流程细节
-- [ ] 完善 createComponentInstance 组件实例
-- [ ] 简版 demo 描述
-- [ ] provide原理阐述
+[Vuex 4 官方文档](https://next.vuex.vuejs.org/)
