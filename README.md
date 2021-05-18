@@ -905,9 +905,9 @@ function createComponentInstance(vnode, parent, suspense) {
 
 答：因为社区有人写了[`Vue4`源码文章](https://lxchuan12.gitee.io/vuex4)。
 
-## 5. 总结
+## 6. 总结
 
-本文总有讲述了`Vuex4`把`Store`实例注入到各个组件中的原理，展开讲述了`Vuex4`相对与`Vuex3`安装方式的改变`Vuex.createStore`、`app.use(store)` ，深入源码分析`Vue.inject`、`Vue.provide`实现原理。
+本文主要讲述了`Vuex4`把`Store`实例注入到各个组件中的原理，展开讲述了`Vuex4`相对与`Vuex3`安装方式的改变`Vuex.createStore`、`app.use(store)` ，深入源码分析`Vue.inject`、`Vue.provide`实现原理。
 
 `Vuex4` 除了安装方式和监测数据变化方式使用了`Vue.reactive`，其他基本和`Vuex3.x`版本没什么区别。
 
