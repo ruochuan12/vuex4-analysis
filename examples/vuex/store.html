@@ -1,54 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <script>
-        // 简版
-        class Store {
-            constructor() {
-                this.name = 'Store 实例';
-            }
-            dispatch() {
-
-            }
-            commit() {}
-            // 省略
+      // 简版
+      class Store {
+        constructor() {
+          this._state = 'Store 实例';
         }
+        dispatch(val) {
+          this.__state = val;
+        }
+        commit() {}
+        // 省略
+      }
 
+      const store = new Store();
+      var rootInstance = {
+        parent: null,
+        provides: {
+          store: store,
+        },
+      };
+      var parentInstance = {
+        parent: rootInstance,
+        provides: {
+          store: store,
+        },
+      };
+      var childInstance1 = {
+        parent: parentInstance,
+        provides: {
+          store: store,
+        },
+      };
+      var childInstance2 = {
+        parent: parentInstance,
+        provides: {
+          store: store,
+        },
+      };
 
-        const store = new Store();
-        var rootInstance = {
-            provides: {
-                store: store,
-            },
-        };
-        var parentInstance = {
-            provides: {
-                store: store,
-            }
-        };
-        var childInstance1 = {
-            provides: {
-                store: store,
-            }
-        };
-        var childInstance2 = {
-            provides: {
-                store: store,
-            }
-        };
-
-        store.name = '我被修改了';
-        // rootInstance、parentInstance、childInstance1、childInstance2 这些对象中的provides.store都改了。
-        // 因为共享着同一个store对象。
+      store.dispatch('我被修改了');
+      // store Store {__state: "我被修改了"}
+      // rootInstance、parentInstance、childInstance1、childInstance2 这些对象中的provides.store都改了。
+      // 因为共享着同一个store对象。
     </script>
-</body>
-
+  </body>
 </html>
